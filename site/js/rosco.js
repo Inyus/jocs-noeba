@@ -178,7 +178,7 @@
     setTimeout(() => els.input.focus(), 50);
   }
   function advance() {
-    const nxt = nextUnanswered(state.cur);
+    const nxt = nextUnanswered(state.cur + 1);
     if (nxt === -1) { finish(); return; }
     state.cur = nxt;
     save();
