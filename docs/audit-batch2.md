@@ -1,0 +1,20 @@
+roscos: 60 | issues: 17 | queue dups: 16
+by type: {'gloss': 1, 'queue': 16}
+
+(0, 'b', 'boníssim', 'gloss length 8')
+('-', '-', 'glaçó', 'queue dup x2')
+('-', '-', 'francmaçó', 'queue dup x2')
+('-', '-', 'coça', 'queue dup x2')
+('-', '-', 'llançaflames', 'queue dup x2')
+('-', '-', 'loquaç', 'queue dup x2')
+('-', '-', 'cofinançar', 'queue dup x2')
+('-', '-', 'quitança', 'queue dup x2')
+('-', '-', 'plançó', 'queue dup x2')
+('-', '-', 'creixença', 'queue dup x2')
+('-', '-', 'redreç', 'queue dup x2')
+('-', '-', 'glaçar', 'queue dup x2')
+('-', '-', 'arç', 'queue dup x2')
+('-', '-', 'veloçment', 'queue dup x2')
+('-', '-', 'forçadament', 'queue dup x2')
+('-', '-', 'alliçonar', 'queue dup x2')
+('-', '-', 'romança', 'queue dup x2')

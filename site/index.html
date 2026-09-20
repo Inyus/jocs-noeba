@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>La Rosca — el joc de paraules diari en català | jocs.noeba.cat</title>
+<meta name="description" content="El rosco diari en català: 22 lletres, 22 definicions del Viccionari. Un joc de paraules nou cada dia, gratis i en català.">
+<link rel="canonical" href="https://jocs.noeba.cat/">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="ca_ES">
+<meta property="og:site_name" content="jocs.noeba.cat">
+<meta property="og:title" content="La Rosca — el joc de paraules diari en català">
+<meta property="og:description" content="22 lletres, 22 definicions. Un rosco nou cada dia, gratis i en català.">
+<meta property="og:url" content="https://jocs.noeba.cat/">
+<meta property="og:image" content="https://jocs.noeba.cat/assets/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="La Rosca — el joc de paraules diari en català">
+<meta name="twitter:description" content="22 lletres, 22 definicions. Un rosco nou cada dia, gratis i en català.">
+<meta name="twitter:image" content="https://jocs.noeba.cat/assets/og.png">
+<link rel="icon" type="image/png" href="/assets/favicon.png">
+<link rel="apple-touch-icon" href="/assets/favicon.png">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<header class="top">
+  <div class="wordmark">jocs<span class="dot">.</span>noeba<span class="dot">.</span>cat</div>
+  <div class="dayline">
+    <span id="dayLabel" class="day-label"></span>
+    <span id="streak" class="streak" title="Ratxa de dies jugats"></span>
+  </div>
+</header>
+
+<main id="game" class="game" hidden>
+  <h1 class="gametitle">La Rosca del dia</h1>
+
+  <div class="board">
+    <div id="wheel" class="wheel" role="group" aria-label="Rosca de lletres"></div>
+    <div id="bigLetter" class="big-letter" aria-live="polite"></div>
+  </div>
+
+  <section class="clue-panel" aria-live="polite">
+    <div class="clue-head">
+      <span id="clueIntro" class="clue-intro"></span>
+      <button id="listenBtn" class="listen-btn" type="button" hidden aria-label="Escolta la definició">🔊</button>
+    </div>
+    <p id="clueText" class="clue-text"></p>
+  </section>
+
+  <form id="answerForm" class="answer-row" autocomplete="off">
+    <input id="answerInput" class="answer-input" type="text" inputmode="text"
+           autocomplete="off" autocapitalize="none" spellcheck="false"
+           placeholder="La teva resposta…" aria-label="La teva resposta">
+    <button type="submit" class="btn btn-primary">Respon</button>
+    <button id="passoBtn" type="button" class="btn btn-secondary">Passo</button>
+  </form>
+
+  <div class="scoreline">
+    <span id="scoreOk" class="score ok">0</span> encerts ·
+    <span id="scoreBad" class="score bad">0</span> errors ·
+    <span id="scoreLeft" class="score left">22</span> per respondre
+  </div>
+</main>
+
+<section id="results" class="results" hidden>
+  <h2 id="resultTitle" class="result-title"></h2>
+  <p id="resultScore" class="result-score"></p>
+  <div id="resultWheel" class="result-wheel" aria-hidden="true"></div>
+  <div id="review" class="review"></div>
+  <div class="share-row">
+    <span class="share-label">Comparteix:</span>
+    <a id="shareX" class="share-btn" target="_blank" rel="noopener" aria-label="Comparteix a X">X</a>
+    <a id="shareFB" class="share-btn" target="_blank" rel="noopener" aria-label="Comparteix a Facebook">f</a>
+    <a id="shareWA" class="share-btn" target="_blank" rel="noopener" aria-label="Comparteix a WhatsApp">WhatsApp</a>
+    <button id="shareCopy" class="share-btn share-copy" type="button">Copia</button>
+  </div>
+  <p class="tomorrow">Demà hi haurà una rosca nova. Fins demà!</p>
+</section>
+
+<main id="nogame" class="nogame" hidden>
+  <h1>Encara no hi ha rosca disponible</h1>
+  <p>Torna-hi d'aquí a una estona: cada dia se'n publica una de nova.</p>
+</main>
+
+<footer class="foot">
+  <p>Definicions del <a href="https://ca.wiktionary.org" rel="noopener" target="_blank">Viccionari</a> (CC BY-SA 3.0). Veus sintètiques: projecte AINA (Matxa-TTS, ús no comercial).</p>
+</footer>
+
+<script src="/js/data.js"></script>
+<script src="/js/rosco.js"></script>
+</body>
+</html>

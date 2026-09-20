@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Disallow: /audio/
+
+Sitemap: https://jocs.noeba.cat/sitemap.xml
