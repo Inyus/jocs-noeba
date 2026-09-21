@@ -47,6 +47,10 @@ export default {
         headers: { 'content-type': 'text/html;charset=utf-8', 'cache-control': 'no-cache' },
       });
     }
-    return env.ASSETS.fetch(request);
+    try {
+      return await env.ASSETS.fetch(request);
+    } catch (e) {
+      return new Response('ASSETS-ERR: ' + (e && e.message), { status: 599 });
+    }
   },
 };
