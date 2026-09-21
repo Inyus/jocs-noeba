@@ -52,6 +52,10 @@
     shareFB: document.getElementById('shareFB'),
     shareWA: document.getElementById('shareWA'),
     shareCopy: document.getElementById('shareCopy'),
+    jokerBtn: document.getElementById('jokerBtn'),
+    helpBtn: document.getElementById('helpBtn'),
+    helpModal: document.getElementById('helpModal'),
+    helpClose: document.getElementById('helpClose'),
   };
 
   if (DAY_IDX < 0 || DAY_IDX >= DAYS.length) {
@@ -59,9 +63,10 @@
     return;
   }
   const day = DAYS[DAY_IDX];
-  const N = day.cells.length;              // tiles incl. the ç joker tile
+  const N = day.cells.length;              // cells incl. the ç joker question
   const CIDX = day.cells.findIndex(c => c.l === 'ç');
   const Q = N - (CIDX >= 0 ? 1 : 0);       // questions per game (letter slots)
+  const SLOTS = day.cells.map((_, i) => i).filter(i => i !== CIDX); // track order, no ç
 
   const MONTHS = ['de gener','de febrer','de març','d\'abril','de maig','de juny','de juliol','d\'agost','de setembre','d\'octubre','de novembre','de desembre'];
   function dayLabel() {
@@ -198,30 +203,27 @@
       tileEls.push(b);
     }
   }
-  function tileIndexAt(pos) { return ((state.cur + pos) % N + N) % N; }
+  function tileIndexAt(pos) {
+    const p = SLOTS.indexOf(state.cur);
+    return SLOTS[((p + pos) % Q + Q) % Q];
+  }
   function paintWindow() {
     for (let k = 0; k < WIN; k++) {
       const pos = k - HALF;
       const i = tileIndexAt(pos);
       const b = tileEls[k];
-      const isJ = i === CIDX;
       const st = state.cells[i].s;
       b.textContent = day.cells[i].l;
       b.className = 'tile' +
         (Math.abs(pos) === 3 ? ' edge2' : Math.abs(pos) === 2 ? ' edge1' : '') +
-        (isJ ? ' joker' + (state.joker === 'spent' ? ' spent' : '') : '') +
-        (!isJ && st === 'ok' ? ' ok' : !isJ && st === 'bad' ? ' bad' : !isJ && st === 'pass' ? ' pass' : '') +
+        (st === 'ok' ? ' ok' : st === 'bad' ? ' bad' : st === 'pass' ? ' pass' : '') +
         (isSwapped(i) ? ' swapped' : '') +
         (pos === 0 && !state.done ? ' current' : '');
-      b.title = isJ ? (state.joker === 'spent' ? 'Comodí gastat' : 'Comodí: canvia la pregunta actual per la de la Ç') : '';
-      const tappable = !state.done && (
-        (!isJ && unanswered(i)) ||
-        (isJ && state.joker === 'unused' && state.awaiting === 'answer')
-      );
+      b.title = '';
+      const tappable = !state.done && unanswered(i);
       b.disabled = !tappable && pos !== 0;
       b.onclick = () => {
         if (state.done) return;
-        if (isJ) { useJoker(); return; }
         if (unanswered(i)) jumpTo(i);
       };
     }
@@ -278,6 +280,7 @@
     els.dirBack.disabled = answering;
     els.dirFwd.disabled = answering;
     paintWindow();
+    paintJoker();
   }
   function showCurrent(animDir) {
     const i = state.cur;
@@ -290,6 +293,7 @@
     els.input.value = '';
     paintScore();
     paintWindow();
+    paintJoker();
     if (typeof animDir === 'number') slideWindow(animDir);
     if (state.awaiting === 'answer') setTimeout(() => els.input.focus(), 50);
   }
@@ -309,12 +313,24 @@
     state.cur = i;
     setAwaiting('answer');
     save();
-    const fwd = ((i - prev) % N + N) % N;
-    const bwd = ((prev - i) % N + N) % N;
+    const fwd = ((SLOTS.indexOf(i) - SLOTS.indexOf(prev)) % Q + Q) % Q;
+    const bwd = ((SLOTS.indexOf(prev) - SLOTS.indexOf(i)) % Q + Q) % Q;
     showCurrent(fwd <= bwd ? 1 : -1);
   }
   els.dirBack.addEventListener('click', () => { if (state.awaiting === 'dir') move(-1); });
   els.dirFwd.addEventListener('click', () => { if (state.awaiting === 'dir') move(1); });
+
+  function paintJoker() {
+    const active = !state.done && state.joker === 'unused' && state.awaiting === 'answer';
+    els.jokerBtn.disabled = !active;
+    els.jokerBtn.className = 'joker-btn' +
+      (state.joker === 'spent' ? ' spent' : '') +
+      (!state.done && isSwapped(state.cur) ? ' active' : '');
+    els.jokerBtn.title = state.joker === 'spent'
+      ? 'Comodí gastat'
+      : 'Comodí: canvia la pregunta actual per la de la Ç';
+  }
+  els.jokerBtn.addEventListener('click', () => { useJoker(); });
 
   function useJoker() {
     if (state.joker !== 'unused' || state.awaiting !== 'answer' || state.done) return;
@@ -390,6 +406,7 @@
     stopTimer();
     save();
     paintWindow();
+    paintJoker();
     const st = updateStreak();
     paintStreak();
     els.game.hidden = true;
@@ -435,6 +452,19 @@
     };
   }
 
+  // ---------- help modal ----------
+  const LS_HELP = 'jocs.capicua.seenHelp';
+  function openHelp() { els.helpModal.hidden = false; setTimeout(() => els.helpClose.focus(), 50); }
+  function closeHelp() {
+    els.helpModal.hidden = true;
+    try { localStorage.setItem(LS_HELP, '1'); } catch (e) {}
+  }
+  els.helpBtn.addEventListener('click', openHelp);
+  els.helpClose.addEventListener('click', closeHelp);
+  els.helpModal.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === 'Escape') { e.preventDefault(); closeHelp(); }
+  });
+
   // ---------- boot ----------
   buildTrack();
   paintStreak();
@@ -451,5 +481,8 @@
     paintTimer();
     showCurrent();
     if (state.elapsed > 0) startTimer();
+    let seenHelp = null;
+    try { seenHelp = localStorage.getItem(LS_HELP); } catch (e) {}
+    if (!seenHelp && state.elapsed === 0 && state.cells.every(c => c.s === 'pending')) openHelp();
   }
 })();

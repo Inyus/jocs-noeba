@@ -26,6 +26,7 @@
   <div class="wordmark">jocs<span class="dot">.</span>noeba<span class="dot">.</span>cat</div>
   <div class="dayline">
     <span id="dayLabel" class="day-label"></span>
+    <button id="helpBtn" class="help-btn" type="button">Com es juga?</button>
     <span id="timer" class="timer" title="Temps de joc" hidden>⏱ 0:00</span>
     <span id="streak" class="streak" title="Ratxa de dies jugats"></span>
   </div>
@@ -35,6 +36,13 @@
   <h1 class="gametitle">Capicua del dia</h1>
 
   <div id="track" class="track" role="group" aria-label="Tira de lletres"></div>
+
+  <div class="joker-bar">
+    <button id="jokerBtn" class="joker-btn" type="button">
+      <span class="jk-letter">Ç</span>
+      <span class="jk-label">Comodí</span>
+    </button>
+  </div>
 
   <div class="dir-bar">
     <button id="dirBack" class="dir-btn" type="button" aria-label="Vés enrere">◀ <span>Enrere</span></button>
@@ -61,7 +69,7 @@
   <div class="scoreline">
     <span id="scoreOk" class="score ok">0</span> encerts ·
     <span id="scoreBad" class="score bad">0</span> errors ·
-    <span id="scoreLeft" class="score left">22</span> per respondre
+    <span id="scoreLeft" class="score left">21</span> per respondre
   </div>
 </main>
 
@@ -70,6 +78,29 @@
     <h2 id="errTitle" class="modal-title">Error!</h2>
     <p class="modal-answer">La resposta és: <strong id="errAnswer"></strong></p>
     <button id="errClose" class="btn btn-primary" type="button">Continua</button>
+  </div>
+</div>
+
+<div id="helpModal" class="modal" hidden role="dialog" aria-labelledby="helpTitle" aria-modal="true">
+  <div class="modal-card help-card">
+    <h2 id="helpTitle" class="help-title">Com es juga al Capicua?</h2>
+    <div class="help-body">
+      <p><strong>Què és el Capicua?</strong><br>
+      Cada dia hi ha un joc nou: 21 definicions del Viccionari. Cada definició amaga una paraula que comença amb la lletra que veus, o que la conté, si l'enunciat ho diu. L'objectiu és encertar-les totes.</p>
+      <p><strong>Com s'hi juga?</strong></p>
+      <ol>
+        <li>Llegeix la definició, escriu la paraula i prem <strong>Respon</strong>. No cal que hi posis accents ni cedilles: el joc els entén igual.</li>
+        <li>Si no la saps, prem <strong>Passo</strong>: la lletra queda pendent i hi tornaràs més tard.</li>
+        <li>Després de cada resposta, tria la direcció: <strong>◀ Enrere</strong> o <strong>Endavant ▶</strong>. També pots tocar directament qualsevol lletra lliure de la tira.</li>
+        <li>Si falles, et mostrarem la resposta correcta i la lletra es quedarà vermella.</li>
+        <li>El <strong>cronòmetre</strong> corre mentre jugues: intenta acabar el més ràpid possible!</li>
+      </ol>
+      <p><strong>El comodí de la Ç</strong><br>
+      Tens <strong>un sol comodí per partida</strong>. Si una paraula se't resisteix, prem el botó de la Ç i la pregunta es canviarà per la del comodí. Pensa-t'ho bé: la paraula original ja no tornarà, i si passes, quan tornis a aquella lletra et trobaràs la pregunta de la Ç.</p>
+      <p><strong>La ratxa</strong><br>
+      Entra cada dia i completa el capicua per mantenir la ratxa de foc 🔥.</p>
+    </div>
+    <button id="helpClose" class="btn btn-primary" type="button">Ja ho tinc!</button>
   </div>
 </div>
 
