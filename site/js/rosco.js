@@ -59,7 +59,9 @@
     return;
   }
   const day = DAYS[DAY_IDX];
-  const N = day.cells.length;
+  const N = day.cells.length;              // tiles incl. the ç joker tile
+  const CIDX = day.cells.findIndex(c => c.l === 'ç');
+  const Q = N - (CIDX >= 0 ? 1 : 0);       // questions per game (letter slots)
 
   const MONTHS = ['de gener','de febrer','de març','d\'abril','de maig','de juny','de juliol','d\'agost','de setembre','d\'octubre','de novembre','de desembre'];
   function dayLabel() {
@@ -78,13 +80,15 @@
   }
 
   // ---------- persistence ----------
-  const LS_GAME = `jocs.rosco.day.${DAY_IDX}`;
-  const LS_STREAK = 'jocs.rosco.streak';
-  const LS_LAST = 'jocs.rosco.lastDay';
+  const LS_GAME = `jocs.capicua.day.${DAY_IDX}`;
+  const LS_STREAK = 'jocs.capicua.streak';
+  const LS_LAST = 'jocs.capicua.lastDay';
   let state;
   try { state = JSON.parse(localStorage.getItem(LS_GAME)) || null; } catch (e) { state = null; }
-  if (!state || !Array.isArray(state.cells) || state.cells.length !== N) {
-    state = { cells: day.cells.map(() => ({ s: 'pending', ans: '' })), cur: 0, done: false, elapsed: 0, awaiting: 'answer' };
+  if (!state || !Array.isArray(state.cells) || state.cells.length !== N ||
+      (state.joker !== 'unused' && state.joker !== 'spent')) {
+    state = { cells: day.cells.map(() => ({ s: 'pending', ans: '' })), cur: 0, done: false,
+              elapsed: 0, awaiting: 'answer', joker: 'unused', swap: null };
   }
   if (typeof state.elapsed !== 'number') state.elapsed = 0;
   if (state.awaiting !== 'dir' && state.awaiting !== 'answer') state.awaiting = 'answer';
@@ -117,6 +121,24 @@
     paintTimer();
   }
 
+  // ---------- sounds (WebAudio, no assets) ----------
+  let actx = null;
+  function tone(freq, t0, dur, type, vol) {
+    try {
+      if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)();
+      const o = actx.createOscillator(), g = actx.createGain();
+      o.type = type; o.frequency.value = freq;
+      const start = actx.currentTime + t0;
+      g.gain.setValueAtTime(0.0001, start);
+      g.gain.exponentialRampToValueAtTime(vol, start + 0.015);
+      g.gain.exponentialRampToValueAtTime(0.0001, start + dur);
+      o.connect(g); g.connect(actx.destination);
+      o.start(start); o.stop(start + dur + 0.03);
+    } catch (e) {}
+  }
+  function sndOk() { tone(523.25, 0, .11, 'sine', .16); tone(783.99, .10, .16, 'sine', .16); }
+  function sndBad() { tone(146.83, 0, .20, 'square', .07); tone(110.00, .05, .22, 'square', .07); }
+
   // ---------- streak ----------
   function streakInfo() {
     let st = 0;
@@ -140,6 +162,11 @@
     els.streak.textContent = st > 0 ? `🔥 ${st}` : '';
   }
 
+  // ---------- questions (comodí swap) ----------
+  function isSwapped(i) { return state.swap && state.swap.slot === i; }
+  function questionFor(i) { return isSwapped(i) ? day.cells[CIDX] : day.cells[i]; }
+  function audioIdxFor(i) { return isSwapped(i) ? CIDX : i; }
+
   // ---------- audio ----------
   let audioDays = null;
   let player = null;
@@ -152,39 +179,75 @@
   }
   els.listenBtn.addEventListener('click', () => {
     if (player) { player.pause(); player = null; }
-    player = new Audio(`/audio/d${DAY_IDX}/${state.cur}.ogg`);
+    player = new Audio(`/audio/d${DAY_IDX}/${audioIdxFor(state.cur)}.ogg`);
     player.play().catch(() => {});
   });
 
-  // ---------- track ----------
+  // ---------- 7-tile window ----------
+  const WIN = 7, HALF = 3;
   const tileEls = [];
-  function isJoker(i) { return day.cells[i].l === 'ç'; }
   function buildTrack() {
     els.track.innerHTML = '';
     tileEls.length = 0;
-    for (let i = 0; i < N; i++) {
+    for (let k = 0; k < WIN; k++) {
       const b = document.createElement('button');
       b.type = 'button';
-      b.className = 'tile' + (isJoker(i) ? ' joker' : '');
-      b.textContent = day.cells[i].l;
-      if (isJoker(i)) b.title = 'Comodí';
-      b.addEventListener('click', () => jumpTo(i));
+      b.className = 'tile';
+      b.dataset.pos = k - HALF; // -3..3 around current
       els.track.appendChild(b);
       tileEls.push(b);
     }
   }
-  function renderTrack() {
-    for (let i = 0; i < N; i++) {
+  function tileIndexAt(pos) { return ((state.cur + pos) % N + N) % N; }
+  function paintWindow() {
+    for (let k = 0; k < WIN; k++) {
+      const pos = k - HALF;
+      const i = tileIndexAt(pos);
+      const b = tileEls[k];
+      const isJ = i === CIDX;
       const st = state.cells[i].s;
-      tileEls[i].className = 'tile' + (isJoker(i) ? ' joker' : '') +
-        (st === 'ok' ? ' ok' : st === 'bad' ? ' bad' : st === 'pass' ? ' pass' : '') +
-        (i === state.cur && !state.done ? ' current' : '');
-      tileEls[i].disabled = state.done || !unanswered(i);
+      b.textContent = day.cells[i].l;
+      b.className = 'tile' +
+        (Math.abs(pos) === 3 ? ' edge2' : Math.abs(pos) === 2 ? ' edge1' : '') +
+        (isJ ? ' joker' + (state.joker === 'spent' ? ' spent' : '') : '') +
+        (!isJ && st === 'ok' ? ' ok' : !isJ && st === 'bad' ? ' bad' : !isJ && st === 'pass' ? ' pass' : '') +
+        (isSwapped(i) ? ' swapped' : '') +
+        (pos === 0 && !state.done ? ' current' : '');
+      b.title = isJ ? (state.joker === 'spent' ? 'Comodí gastat' : 'Comodí: canvia la pregunta actual per la de la Ç') : '';
+      const tappable = !state.done && (
+        (!isJ && unanswered(i)) ||
+        (isJ && state.joker === 'unused' && state.awaiting === 'answer')
+      );
+      b.disabled = !tappable && pos !== 0;
+      b.onclick = () => {
+        if (state.done) return;
+        if (isJ) { useJoker(); return; }
+        if (unanswered(i)) jumpTo(i);
+      };
     }
+  }
+  function slideWindow(dir) {
+    // dir: +1 forward (tiles slide left), -1 backward, 0 = soft fade
+    const w = tileEls[0] ? (tileEls[0].offsetWidth + 7) : 55;
+    els.track.classList.remove('slide-anim');
+    if (dir !== 0) {
+      els.track.style.transform = `translateX(${dir * w}px)`;
+      els.track.style.opacity = '.35';
+    } else {
+      els.track.style.opacity = '.25';
+    }
+    void els.track.offsetWidth; // reflow
+    els.track.classList.add('slide-anim');
+    els.track.style.transform = 'translateX(0)';
+    els.track.style.opacity = '1';
   }
 
   // ---------- flow ----------
-  function unanswered(i) { const s = state.cells[i].s; return s === 'pending' || s === 'pass'; }
+  function unanswered(i) {
+    if (i === CIDX) return false;
+    const s = state.cells[i].s;
+    return s === 'pending' || s === 'pass';
+  }
   function nextUnanswered(from, dir) {
     for (let k = 0; k < N; k++) {
       const i = ((from + dir * k) % N + N) % N;
@@ -194,8 +257,17 @@
   }
   function counts() {
     let ok = 0, bad = 0;
-    state.cells.forEach(c => { if (c.s === 'ok') ok++; else if (c.s === 'bad') bad++; });
-    return { ok, bad, left: N - ok - bad };
+    state.cells.forEach((c, i) => {
+      if (i === CIDX) return;
+      if (c.s === 'ok') ok++; else if (c.s === 'bad') bad++;
+    });
+    return { ok, bad, left: Q - ok - bad };
+  }
+  function paintScore() {
+    const k = counts();
+    els.scoreOk.textContent = k.ok;
+    els.scoreBad.textContent = k.bad;
+    els.scoreLeft.textContent = k.left;
   }
   function setAwaiting(mode) {
     state.awaiting = mode;
@@ -205,22 +277,20 @@
     els.form.querySelector('button[type=submit]').disabled = !answering;
     els.dirBack.disabled = answering;
     els.dirFwd.disabled = answering;
-    renderTrack();
+    paintWindow();
   }
-  function showCurrent() {
+  function showCurrent(animDir) {
     const i = state.cur;
-    const c = day.cells[i];
+    const c = questionFor(i);
     els.bigLetter.textContent = c.l;
-    els.clueIntro.textContent = c.m === 'comença'
+    els.clueIntro.textContent = (isSwapped(i) ? 'Comodí · ' : '') + (c.m === 'comença'
       ? `Comença amb la lletra ${c.l.toUpperCase()}:`
-      : `Conté la lletra ${c.l.toUpperCase()}:`;
+      : `Conté la lletra ${c.l.toUpperCase()}:`);
     els.clueText.textContent = c.q;
     els.input.value = '';
-    const k = counts();
-    els.scoreOk.textContent = k.ok;
-    els.scoreBad.textContent = k.bad;
-    els.scoreLeft.textContent = k.left;
-    renderTrack();
+    paintScore();
+    paintWindow();
+    if (typeof animDir === 'number') slideWindow(animDir);
     if (state.awaiting === 'answer') setTimeout(() => els.input.focus(), 50);
   }
   function move(dir) {
@@ -230,18 +300,31 @@
     state.cur = nxt;
     setAwaiting('answer');
     save();
-    showCurrent();
+    showCurrent(dir);
   }
   function jumpTo(i) {
     if (state.done || !unanswered(i)) return;
     startTimer();
+    const prev = state.cur;
     state.cur = i;
     setAwaiting('answer');
     save();
-    showCurrent();
+    const fwd = ((i - prev) % N + N) % N;
+    const bwd = ((prev - i) % N + N) % N;
+    showCurrent(fwd <= bwd ? 1 : -1);
   }
   els.dirBack.addEventListener('click', () => { if (state.awaiting === 'dir') move(-1); });
   els.dirFwd.addEventListener('click', () => { if (state.awaiting === 'dir') move(1); });
+
+  function useJoker() {
+    if (state.joker !== 'unused' || state.awaiting !== 'answer' || state.done) return;
+    if (state.cur === CIDX) return;
+    startTimer();
+    state.joker = 'spent';
+    state.swap = { slot: state.cur };
+    save();
+    showCurrent(0); // same slot, question changes to the ç word
+  }
 
   function afterAnswer() {
     // answered/passed: player now picks a direction (or taps a tile)
@@ -249,22 +332,29 @@
     if (k.left === 0) { finish(); return; }
     setAwaiting('dir');
     save();
-    renderTrack();
+    els.input.value = '';
+    els.clueIntro.textContent = 'Tria la direcció:';
+    els.clueText.textContent = 'Prem ◀ Enrere o Endavant ▶ per anar a una altra lletra, o toca directament una lletra lliure de la tira.';
+    paintScore();
+    paintWindow();
   }
   function answer(val) {
     startTimer();
     const i = state.cur;
-    const c = day.cells[i];
+    const c = questionFor(i);
     const good = norm(val) === norm(c.a);
     state.cells[i] = { s: good ? 'ok' : 'bad', ans: val };
     save();
     if (player) { player.pause(); player = null; }
-    if (!good) {
+    if (good) {
+      sndOk();
+      afterAnswer();
+    } else {
+      sndBad();
       els.errAnswer.textContent = c.a.toUpperCase();
       els.errModal.hidden = false;
+      paintWindow();
       setTimeout(() => els.errClose.focus(), 50);
-    } else {
-      afterAnswer();
     }
   }
   els.errClose.addEventListener('click', () => {
@@ -299,36 +389,40 @@
     state.done = true;
     stopTimer();
     save();
-    renderTrack(); // final colors before swapping panels
+    paintWindow();
     const st = updateStreak();
     paintStreak();
     els.game.hidden = true;
     els.results.hidden = false;
     const k = counts();
-    els.resultTitle.textContent = k.ok === N ? 'Capicua perfecte!' :
-      k.ok >= N * 0.7 ? 'Molt bon capicua!' : 'Capicua acabat!';
-    els.resultScore.textContent = `${k.ok} de ${N} encerts` +
+    els.resultTitle.textContent = k.ok === Q ? 'Capicua perfecte!' :
+      k.ok >= Q * 0.7 ? 'Molt bon capicua!' : 'Capicua acabat!';
+    els.resultScore.textContent = `${k.ok} de ${Q} encerts` +
       (k.bad ? ` · ${k.bad} errors` : '') + ` · ⏱ ${fmtTime(state.elapsed)}`;
     els.resultTrack.innerHTML = '';
     for (let i = 0; i < N; i++) {
+      if (i === CIDX) continue;
       const d = document.createElement('div');
-      d.className = 'cell ' + (state.cells[i].s === 'ok' ? 'ok' : 'bad');
+      d.className = 'cell ' + (state.cells[i].s === 'ok' ? 'ok' : 'bad') + (isSwapped(i) ? ' swapped' : '');
       d.textContent = day.cells[i].l;
       els.resultTrack.appendChild(d);
     }
     els.review.innerHTML = '';
     for (let i = 0; i < N; i++) {
-      const c = day.cells[i];
+      if (i === CIDX) continue;
+      const c = questionFor(i);
       const stt = state.cells[i].s;
       const item = document.createElement('div');
       item.className = 'review-item ' + (stt === 'ok' ? 'ok' : 'bad');
+      const viaJoker = isSwapped(i) ? ' ★' : '';
       const userBit = stt === 'ok' ? '' :
         ` <span class="userans">(has dit: ${state.cells[i].ans || '—'})</span>`;
-      item.innerHTML = `<span class="rw">${c.l}: ${c.a}</span>${userBit} — ${c.q}`;
+      item.innerHTML = `<span class="rw">${day.cells[i].l}${viaJoker}: ${c.a}</span>${userBit} — ${c.q}`;
       els.review.appendChild(item);
     }
-    const emoji = state.cells.map(c => c.s === 'ok' ? '🟢' : '🔴').join('');
-    const text = `Capicua del ${dayLabel()}\n${k.ok}/${N} encerts · ⏱ ${fmtTime(state.elapsed)}\n${emoji}\nhttps://jocs.noeba.cat`;
+    const emoji = state.cells.filter((_, i) => i !== CIDX)
+      .map(c => c.s === 'ok' ? '🟢' : '🔴').join('') + (state.joker === 'spent' ? '★' : '');
+    const text = `Capicua del ${dayLabel()}\n${k.ok}/${Q} encerts · ⏱ ${fmtTime(state.elapsed)}\n${emoji}\nhttps://jocs.noeba.cat`;
     const enc = encodeURIComponent(text);
     els.shareX.href = `https://twitter.com/intent/tweet?text=${enc}`;
     els.shareFB.href = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent('https://jocs.noeba.cat')}&quote=${enc}`;

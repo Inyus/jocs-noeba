@@ -40,11 +40,12 @@ body {
 }
 .gametitle { font-size: 1.5rem; margin: .4rem 0 1.1rem; }
 
-/* ---- letter track ---- */
+/* ---- letter window (7 tiles, sliding) ---- */
 .track {
-  width: 100%; display: flex; flex-wrap: wrap; gap: 7px;
+  display: flex; flex-wrap: nowrap; gap: 7px;
   justify-content: center; margin-bottom: 1rem;
 }
+.track.slide-anim { transition: transform .22s ease, opacity .22s ease; }
 .tile {
   position: relative;
   width: 48px; height: 48px;
@@ -69,6 +70,17 @@ body {
 }
 .tile.joker.ok { background: var(--joker); border-color: var(--joker); color: #fff; }
 .tile.joker.current { border-color: var(--joker); background: var(--joker-soft); transform: scale(1.15); }
+.tile.joker.spent { opacity: .4; }
+.tile.edge1 { opacity: .65; }
+.tile.edge2 { opacity: .35; }
+.tile.edge1.current, .tile.edge2.current { opacity: 1; }
+.tile.swapped::before {
+  content: '★'; position: absolute; top: -9px; left: -7px;
+  font-size: .8rem; color: var(--joker);
+  background: var(--card); border-radius: 50%; padding: 1px 2px;
+  box-shadow: var(--shadow);
+}
+.result-track .cell.swapped { outline: 2px solid var(--joker); outline-offset: 1px; }
 
 /* ---- direction bar ---- */
 .dir-bar {
