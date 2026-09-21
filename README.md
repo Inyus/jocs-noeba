@@ -1,11 +1,12 @@
 # jocs.noeba.cat
 
-Word games in Catalan, free forever. First game: **La Rosca** (daily letter-wheel
-game: 22 letters, 22 dictionary definitions, Catalan-only UI). Second game:
+Word games in Catalan, free forever. First game: **Capicua** (daily letter game:
+22 letters, 22 dictionary definitions, forward/backward direction choice after
+each letter, timer, Catalan-only UI). Second game:
 **Contexto català** (semantic-proximity word guessing with fastText Catalan
 vectors), after launch.
 
-- Live: https://jocs.noeba.cat (pending deploy)
+- Live: https://jocs.noeba.cat
 - Part of the noeba.cat family (retos.noeba.cat, pixels.noeba.cat)
 
 ## Data honesty rules (non-negotiable)

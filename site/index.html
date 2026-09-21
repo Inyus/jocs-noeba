@@ -3,19 +3,19 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>La Rosca — el joc de paraules diari en català | jocs.noeba.cat</title>
-<meta name="description" content="El rosco diari en català: 22 lletres, 22 definicions del Viccionari. Un joc de paraules nou cada dia, gratis i en català.">
+<title>Capicua — el joc de paraules diari en català | jocs.noeba.cat</title>
+<meta name="description" content="El Capicua diari en català: 22 lletres, 22 definicions del Viccionari. Tria endavant o enrere després de cada lletra. Un joc de paraules nou cada dia, gratis i en català.">
 <link rel="canonical" href="https://jocs.noeba.cat/">
 <meta property="og:type" content="website">
 <meta property="og:locale" content="ca_ES">
 <meta property="og:site_name" content="jocs.noeba.cat">
-<meta property="og:title" content="La Rosca — el joc de paraules diari en català">
-<meta property="og:description" content="22 lletres, 22 definicions. Un rosco nou cada dia, gratis i en català.">
+<meta property="og:title" content="Capicua — el joc de paraules diari en català">
+<meta property="og:description" content="22 lletres, 22 definicions. Endavant o enrere, tu tries. Un Capicua nou cada dia, gratis i en català.">
 <meta property="og:url" content="https://jocs.noeba.cat/">
 <meta property="og:image" content="https://jocs.noeba.cat/assets/og.png">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="La Rosca — el joc de paraules diari en català">
-<meta name="twitter:description" content="22 lletres, 22 definicions. Un rosco nou cada dia, gratis i en català.">
+<meta name="twitter:title" content="Capicua — el joc de paraules diari en català">
+<meta name="twitter:description" content="22 lletres, 22 definicions. Endavant o enrere, tu tries. Un Capicua nou cada dia, gratis i en català.">
 <meta name="twitter:image" content="https://jocs.noeba.cat/assets/og.png">
 <link rel="icon" type="image/png" href="/assets/favicon.png">
 <link rel="apple-touch-icon" href="/assets/favicon.png">
@@ -26,16 +26,20 @@
   <div class="wordmark">jocs<span class="dot">.</span>noeba<span class="dot">.</span>cat</div>
   <div class="dayline">
     <span id="dayLabel" class="day-label"></span>
+    <span id="timer" class="timer" title="Temps de joc" hidden>⏱ 0:00</span>
     <span id="streak" class="streak" title="Ratxa de dies jugats"></span>
   </div>
 </header>
 
 <main id="game" class="game" hidden>
-  <h1 class="gametitle">La Rosca del dia</h1>
+  <h1 class="gametitle">Capicua del dia</h1>
 
-  <div class="board">
-    <div id="wheel" class="wheel" role="group" aria-label="Rosca de lletres"></div>
+  <div id="track" class="track" role="group" aria-label="Tira de lletres"></div>
+
+  <div class="dir-bar">
+    <button id="dirBack" class="dir-btn" type="button" aria-label="Vés enrere">◀ <span>Enrere</span></button>
     <div id="bigLetter" class="big-letter" aria-live="polite"></div>
+    <button id="dirFwd" class="dir-btn" type="button" aria-label="Vés endavant"><span>Endavant</span> ▶</button>
   </div>
 
   <section class="clue-panel" aria-live="polite">
@@ -61,10 +65,18 @@
   </div>
 </main>
 
+<div id="errModal" class="modal" hidden role="alertdialog" aria-labelledby="errTitle" aria-modal="true">
+  <div class="modal-card">
+    <h2 id="errTitle" class="modal-title">Error!</h2>
+    <p class="modal-answer">La resposta és: <strong id="errAnswer"></strong></p>
+    <button id="errClose" class="btn btn-primary" type="button">Continua</button>
+  </div>
+</div>
+
 <section id="results" class="results" hidden>
   <h2 id="resultTitle" class="result-title"></h2>
   <p id="resultScore" class="result-score"></p>
-  <div id="resultWheel" class="result-wheel" aria-hidden="true"></div>
+  <div id="resultTrack" class="result-track" aria-hidden="true"></div>
   <div id="review" class="review"></div>
   <div class="share-row">
     <span class="share-label">Comparteix:</span>
@@ -73,12 +85,12 @@
     <a id="shareWA" class="share-btn" target="_blank" rel="noopener" aria-label="Comparteix a WhatsApp">WhatsApp</a>
     <button id="shareCopy" class="share-btn share-copy" type="button">Copia</button>
   </div>
-  <p class="tomorrow">Demà hi haurà una rosca nova. Fins demà!</p>
+  <p class="tomorrow">Demà hi haurà un capicua nou. Fins demà!</p>
 </section>
 
 <main id="nogame" class="nogame" hidden>
-  <h1>Encara no hi ha rosca disponible</h1>
-  <p>Torna-hi d'aquí a una estona: cada dia se'n publica una de nova.</p>
+  <h1>Encara no hi ha capicua disponible</h1>
+  <p>Torna-hi d'aquí a una estona: cada dia se'n publica un de nou.</p>
 </main>
 
 <footer class="foot">

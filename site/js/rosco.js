@@ -1,4 +1,4 @@
-/* La Rosca — daily Catalan word game. All logic client-side. */
+/* Capicua — daily Catalan word game. All logic client-side. */
 (function () {
   'use strict';
 
@@ -25,8 +25,10 @@
     game: document.getElementById('game'),
     results: document.getElementById('results'),
     nogame: document.getElementById('nogame'),
-    wheel: document.getElementById('wheel'),
+    track: document.getElementById('track'),
     bigLetter: document.getElementById('bigLetter'),
+    dirBack: document.getElementById('dirBack'),
+    dirFwd: document.getElementById('dirFwd'),
     clueIntro: document.getElementById('clueIntro'),
     clueText: document.getElementById('clueText'),
     listenBtn: document.getElementById('listenBtn'),
@@ -37,10 +39,14 @@
     scoreBad: document.getElementById('scoreBad'),
     scoreLeft: document.getElementById('scoreLeft'),
     dayLabel: document.getElementById('dayLabel'),
+    timer: document.getElementById('timer'),
     streak: document.getElementById('streak'),
+    errModal: document.getElementById('errModal'),
+    errAnswer: document.getElementById('errAnswer'),
+    errClose: document.getElementById('errClose'),
     resultTitle: document.getElementById('resultTitle'),
     resultScore: document.getElementById('resultScore'),
-    resultWheel: document.getElementById('resultWheel'),
+    resultTrack: document.getElementById('resultTrack'),
     review: document.getElementById('review'),
     shareX: document.getElementById('shareX'),
     shareFB: document.getElementById('shareFB'),
@@ -78,9 +84,38 @@
   let state;
   try { state = JSON.parse(localStorage.getItem(LS_GAME)) || null; } catch (e) { state = null; }
   if (!state || !Array.isArray(state.cells) || state.cells.length !== N) {
-    state = { cells: day.cells.map(() => ({ s: 'pending', ans: '' })), cur: 0, done: false };
+    state = { cells: day.cells.map(() => ({ s: 'pending', ans: '' })), cur: 0, done: false, elapsed: 0, awaiting: 'answer' };
   }
+  if (typeof state.elapsed !== 'number') state.elapsed = 0;
+  if (state.awaiting !== 'dir' && state.awaiting !== 'answer') state.awaiting = 'answer';
   function save() { try { localStorage.setItem(LS_GAME, JSON.stringify(state)); } catch (e) {} }
+
+  // ---------- timer ----------
+  let timerOn = false, timerId = null;
+  function fmtTime(sec) {
+    const m = Math.floor(sec / 60), s = sec % 60;
+    return `${m}:${String(s).padStart(2, '0')}`;
+  }
+  function paintTimer() {
+    els.timer.textContent = `⏱ ${fmtTime(state.elapsed)}`;
+    els.timer.hidden = !timerOn && state.elapsed === 0;
+  }
+  function startTimer() {
+    if (timerOn || state.done) return;
+    timerOn = true;
+    paintTimer();
+    timerId = setInterval(() => {
+      state.elapsed += 1;
+      if (state.elapsed % 5 === 0) save();
+      paintTimer();
+    }, 1000);
+  }
+  function stopTimer() {
+    timerOn = false;
+    if (timerId) { clearInterval(timerId); timerId = null; }
+    save();
+    paintTimer();
+  }
 
   // ---------- streak ----------
   function streakInfo() {
@@ -121,37 +156,38 @@
     player.play().catch(() => {});
   });
 
-  // ---------- wheel ----------
-  const btnEls = [];
-  function buildWheel() {
-    els.wheel.innerHTML = '';
-    btnEls.length = 0;
-    const R = 50; // percent radius
+  // ---------- track ----------
+  const tileEls = [];
+  function isJoker(i) { return day.cells[i].l === 'ç'; }
+  function buildTrack() {
+    els.track.innerHTML = '';
+    tileEls.length = 0;
     for (let i = 0; i < N; i++) {
-      const b = document.createElement('div');
-      b.className = 'wheel-btn';
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'tile' + (isJoker(i) ? ' joker' : '');
       b.textContent = day.cells[i].l;
-      const ang = -Math.PI / 2 + (2 * Math.PI * i) / N;
-      b.style.left = (50 + R * Math.cos(ang)) + '%';
-      b.style.top = (50 + R * Math.sin(ang)) + '%';
-      els.wheel.appendChild(b);
-      btnEls.push(b);
+      if (isJoker(i)) b.title = 'Comodí';
+      b.addEventListener('click', () => jumpTo(i));
+      els.track.appendChild(b);
+      tileEls.push(b);
     }
   }
-  function renderWheel() {
+  function renderTrack() {
     for (let i = 0; i < N; i++) {
       const st = state.cells[i].s;
-      btnEls[i].className = 'wheel-btn' +
+      tileEls[i].className = 'tile' + (isJoker(i) ? ' joker' : '') +
         (st === 'ok' ? ' ok' : st === 'bad' ? ' bad' : st === 'pass' ? ' pass' : '') +
         (i === state.cur && !state.done ? ' current' : '');
+      tileEls[i].disabled = state.done || !unanswered(i);
     }
   }
 
   // ---------- flow ----------
   function unanswered(i) { const s = state.cells[i].s; return s === 'pending' || s === 'pass'; }
-  function nextUnanswered(from) {
+  function nextUnanswered(from, dir) {
     for (let k = 0; k < N; k++) {
-      const i = (from + k) % N;
+      const i = ((from + dir * k) % N + N) % N;
       if (unanswered(i)) return i;
     }
     return -1;
@@ -160,6 +196,16 @@
     let ok = 0, bad = 0;
     state.cells.forEach(c => { if (c.s === 'ok') ok++; else if (c.s === 'bad') bad++; });
     return { ok, bad, left: N - ok - bad };
+  }
+  function setAwaiting(mode) {
+    state.awaiting = mode;
+    const answering = mode === 'answer';
+    els.input.disabled = !answering;
+    els.passo.disabled = !answering;
+    els.form.querySelector('button[type=submit]').disabled = !answering;
+    els.dirBack.disabled = answering;
+    els.dirFwd.disabled = answering;
+    renderTrack();
   }
   function showCurrent() {
     const i = state.cur;
@@ -174,57 +220,101 @@
     els.scoreOk.textContent = k.ok;
     els.scoreBad.textContent = k.bad;
     els.scoreLeft.textContent = k.left;
-    renderWheel();
-    setTimeout(() => els.input.focus(), 50);
+    renderTrack();
+    if (state.awaiting === 'answer') setTimeout(() => els.input.focus(), 50);
   }
-  function advance() {
-    const nxt = nextUnanswered(state.cur + 1);
+  function move(dir) {
+    startTimer();
+    const nxt = nextUnanswered(state.cur + dir, dir);
     if (nxt === -1) { finish(); return; }
     state.cur = nxt;
+    setAwaiting('answer');
     save();
     showCurrent();
   }
+  function jumpTo(i) {
+    if (state.done || !unanswered(i)) return;
+    startTimer();
+    state.cur = i;
+    setAwaiting('answer');
+    save();
+    showCurrent();
+  }
+  els.dirBack.addEventListener('click', () => { if (state.awaiting === 'dir') move(-1); });
+  els.dirFwd.addEventListener('click', () => { if (state.awaiting === 'dir') move(1); });
+
+  function afterAnswer() {
+    // answered/passed: player now picks a direction (or taps a tile)
+    const k = counts();
+    if (k.left === 0) { finish(); return; }
+    setAwaiting('dir');
+    save();
+    renderTrack();
+  }
   function answer(val) {
+    startTimer();
     const i = state.cur;
     const c = day.cells[i];
     const good = norm(val) === norm(c.a);
     state.cells[i] = { s: good ? 'ok' : 'bad', ans: val };
     save();
     if (player) { player.pause(); player = null; }
-    advance();
+    if (!good) {
+      els.errAnswer.textContent = c.a.toUpperCase();
+      els.errModal.hidden = false;
+      setTimeout(() => els.errClose.focus(), 50);
+    } else {
+      afterAnswer();
+    }
   }
+  els.errClose.addEventListener('click', () => {
+    els.errModal.hidden = true;
+    afterAnswer();
+  });
+  els.errModal.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === 'Escape') {
+      e.preventDefault();
+      els.errModal.hidden = true;
+      afterAnswer();
+    }
+  });
   els.form.addEventListener('submit', (e) => {
     e.preventDefault();
+    if (state.awaiting !== 'answer') return;
     const v = els.input.value.trim();
     if (!v) return;
     answer(v);
   });
   els.passo.addEventListener('click', () => {
+    if (state.awaiting !== 'answer') return;
+    startTimer();
     const i = state.cur;
     if (state.cells[i].s === 'pending') state.cells[i].s = 'pass';
     save();
-    advance();
+    afterAnswer();
   });
 
   // ---------- results ----------
   function finish() {
     state.done = true;
+    stopTimer();
     save();
-    renderWheel(); // final colors before swapping panels
+    renderTrack(); // final colors before swapping panels
     const st = updateStreak();
     paintStreak();
     els.game.hidden = true;
     els.results.hidden = false;
     const k = counts();
-    els.resultTitle.textContent = k.ok === N ? 'Rosca perfecta!' :
-      k.ok >= N * 0.7 ? 'Molt bona rosca!' : 'Rosca acabada!';
-    els.resultScore.textContent = `${k.ok} de ${N} encerts` + (k.bad ? ` · ${k.bad} errors` : '');
-    els.resultWheel.innerHTML = '';
+    els.resultTitle.textContent = k.ok === N ? 'Capicua perfecte!' :
+      k.ok >= N * 0.7 ? 'Molt bon capicua!' : 'Capicua acabat!';
+    els.resultScore.textContent = `${k.ok} de ${N} encerts` +
+      (k.bad ? ` · ${k.bad} errors` : '') + ` · ⏱ ${fmtTime(state.elapsed)}`;
+    els.resultTrack.innerHTML = '';
     for (let i = 0; i < N; i++) {
       const d = document.createElement('div');
       d.className = 'cell ' + (state.cells[i].s === 'ok' ? 'ok' : 'bad');
       d.textContent = day.cells[i].l;
-      els.resultWheel.appendChild(d);
+      els.resultTrack.appendChild(d);
     }
     els.review.innerHTML = '';
     for (let i = 0; i < N; i++) {
@@ -238,7 +328,7 @@
       els.review.appendChild(item);
     }
     const emoji = state.cells.map(c => c.s === 'ok' ? '🟢' : '🔴').join('');
-    const text = `La Rosca del ${dayLabel()}\n${k.ok}/${N} encerts\n${emoji}\nhttps://jocs.noeba.cat`;
+    const text = `Capicua del ${dayLabel()}\n${k.ok}/${N} encerts · ⏱ ${fmtTime(state.elapsed)}\n${emoji}\nhttps://jocs.noeba.cat`;
     const enc = encodeURIComponent(text);
     els.shareX.href = `https://twitter.com/intent/tweet?text=${enc}`;
     els.shareFB.href = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent('https://jocs.noeba.cat')}&quote=${enc}`;
@@ -252,15 +342,20 @@
   }
 
   // ---------- boot ----------
-  buildWheel();
+  buildTrack();
   paintStreak();
   if (state.done) {
     els.game.hidden = true;
     finish();
   } else {
-    state.cur = nextUnanswered(state.cur);
-    if (state.cur === -1) state.cur = 0;
+    if (!unanswered(state.cur)) {
+      state.cur = nextUnanswered(state.cur, 1);
+      if (state.cur === -1) state.cur = 0;
+    }
     els.game.hidden = false;
+    setAwaiting(state.awaiting);
+    paintTimer();
     showCurrent();
+    if (state.elapsed > 0) startTimer();
   }
 })();
