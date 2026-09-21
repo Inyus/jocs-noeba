@@ -2,4 +2,4 @@ User-agent: *
 Allow: /
 Disallow: /audio/
 
-Sitemap: https://jocs.noeba.cat/sitemap.xml
+Sitemap: https://capicua.noeba.cat/sitemap.xml

@@ -2,6 +2,28 @@
 (function () {
   'use strict';
 
+  // ---------- one-time migration from jocs.noeba.cat ----------
+  (function migrate() {
+    try {
+      const m = (location.hash || '').match(/^#m=([A-Za-z0-9+/=]+)/);
+      if (!m) return;
+      const bin = atob(m[1]);
+      const bytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      const data = JSON.parse(new TextDecoder('utf-8').decode(bytes));
+      if (data && Array.isArray(data.k)) {
+        for (const pair of data.k) {
+          const k = pair[0], v = pair[1];
+          if (typeof k === 'string' && k.indexOf('jocs.capicua.') === 0 &&
+              typeof v === 'string' && localStorage.getItem(k) === null) {
+            localStorage.setItem(k, v);
+          }
+        }
+      }
+      history.replaceState(null, '', location.pathname + location.search);
+    } catch (e) {}
+  })();
+
   // ---------- data ----------
   function decodeDays() {
     const bin = atob(ROSCO_DAYS_B64);
@@ -439,10 +461,10 @@
     }
     const emoji = state.cells.filter((_, i) => i !== CIDX)
       .map(c => c.s === 'ok' ? '🟢' : '🔴').join('') + (state.joker === 'spent' ? '★' : '');
-    const text = `Capicua del ${dayLabel()}\n${k.ok}/${Q} encerts · ⏱ ${fmtTime(state.elapsed)}\n${emoji}\nhttps://jocs.noeba.cat`;
+    const text = `Capicua del ${dayLabel()}\n${k.ok}/${Q} encerts · ⏱ ${fmtTime(state.elapsed)}\n${emoji}\nhttps://capicua.noeba.cat`;
     const enc = encodeURIComponent(text);
     els.shareX.href = `https://twitter.com/intent/tweet?text=${enc}`;
-    els.shareFB.href = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent('https://jocs.noeba.cat')}&quote=${enc}`;
+    els.shareFB.href = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent('https://capicua.noeba.cat')}&quote=${enc}`;
     els.shareWA.href = `https://wa.me/?text=${enc}`;
     els.shareCopy.onclick = () => {
       const done = () => { els.shareCopy.textContent = 'Copiat!'; setTimeout(() => { els.shareCopy.textContent = 'Copia'; }, 1500); };
