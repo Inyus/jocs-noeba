@@ -24,24 +24,30 @@ body {
   background: var(--bg); color: var(--ink);
   min-height: 100vh; display: flex; flex-direction: column; align-items: center;
 }
+/* ---- Noeba house identity: dark navy band, mint + blue ---- */
 .top {
-  width: 100%; max-width: 720px; padding: 1rem 1.2rem .4rem;
+  width: 100%;
+  background: #090d12;
+  border-bottom: 3px solid #72e2c4;
+}
+.top-inner {
+  max-width: 720px; margin: 0 auto; padding: .85rem 1.2rem;
   display: flex; justify-content: space-between; align-items: baseline; gap: 1rem;
 }
-.wordmark { font-weight: 800; font-size: 1.05rem; letter-spacing: .01em; }
-.wordmark .dot { color: var(--accent); }
-.dayline { display: flex; gap: .7rem; align-items: baseline; font-size: .85rem; color: var(--muted); }
+.wordmark { font-weight: 800; font-size: 1.05rem; letter-spacing: .01em; color: #eef5f5; }
+.wordmark .dot { color: #72e2c4; }
+.dayline { display: flex; gap: .7rem; align-items: baseline; font-size: .85rem; color: #91a3ad; }
 .help-btn {
   font-family: inherit; font-size: .85rem; font-weight: 700;
-  border: 1px solid var(--line); background: var(--card); color: var(--accent);
+  border: 1px solid #23313d; background: #101720; color: #72e2c4;
   border-radius: 999px; padding: .2rem .7rem; cursor: pointer;
 }
 .help-btn:active { transform: scale(.96); }
-.streak { font-weight: 700; color: var(--accent); }
-.timer { font-weight: 700; color: var(--ink); font-variant-numeric: tabular-nums; }
+.streak { font-weight: 700; color: #f0b429; }
+.timer { font-weight: 700; color: #eef5f5; font-variant-numeric: tabular-nums; }
 
 .game, .results, .nogame {
-  width: 100%; max-width: 720px; padding: 0 1.2rem 2rem;
+  width: 100%; max-width: 720px; padding: 1.2rem 1.2rem 2rem;
   display: flex; flex-direction: column; align-items: center;
 }
 .gametitle { font-size: 1.5rem; margin: .4rem 0 1.1rem; }
