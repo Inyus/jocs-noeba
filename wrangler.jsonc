@@ -5,6 +5,7 @@
   "compatibility_date": "2026-09-20",
   "assets": {
     "directory": "./site",
-    "run_worker_first": true
+    "run_worker_first": true,
+    "binding": "ASSETS"
   }
 }
