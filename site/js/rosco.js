@@ -4,10 +4,16 @@
 
   // ---------- one-time migration from jocs.noeba.cat ----------
   (function migrate() {
+    // Fallback (l'script inline del <head> ja ho fa abans del primer pintat).
+    // Neteja el hash encara que la importació falli.
+    let h, m;
+    try { h = location.hash || ''; } catch (e) { return; }
+    if (h.indexOf('#m=') !== 0) return;
+    try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {}
     try {
-      const m = (location.hash || '').match(/^#m=([A-Za-z0-9+/=]+)/);
+      m = h.match(/^#m=([A-Za-z0-9+\/_-]+=*)/);
       if (!m) return;
-      const bin = atob(m[1]);
+      const bin = atob(m[1].replace(/-/g, '+').replace(/_/g, '/'));
       const bytes = new Uint8Array(bin.length);
       for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
       const data = JSON.parse(new TextDecoder('utf-8').decode(bytes));
@@ -20,7 +26,6 @@
           }
         }
       }
-      history.replaceState(null, '', location.pathname + location.search);
     } catch (e) {}
   })();
 

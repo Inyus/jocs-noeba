@@ -3,6 +3,24 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script>
+// Migració des de jocs.noeba.cat: neteja el hash ABANS del primer pintat i importa l'estat.
+(function(){try{
+  var h=location.hash||'';
+  if(h.indexOf('#m=')!==0)return;
+  history.replaceState(null,'',location.pathname+location.search);
+  var m=h.match(/^#m=([A-Za-z0-9+\/_-]+=*)/);
+  if(!m)return;
+  var bin=atob(m[1].replace(/-/g,'+').replace(/_/g,'/'));
+  var bytes=new Uint8Array(bin.length);
+  for(var i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i);
+  var data=JSON.parse(new TextDecoder('utf-8').decode(bytes));
+  if(data&&Array.isArray(data.k))for(var j=0;j<data.k.length;j++){
+    var k=data.k[j][0],v=data.k[j][1];
+    if(typeof k==='string'&&k.indexOf('jocs.capicua.')===0&&typeof v==='string'&&localStorage.getItem(k)===null)localStorage.setItem(k,v);
+  }
+}catch(e){}})();
+</script>
 <title>Capicua — el joc de paraules diari en català | capicua.noeba.cat</title>
 <meta name="description" content="El Capicua diari en català: 21 definicions del Viccionari i el comodí de la Ç. Tria endavant o enrere després de cada lletra. Un joc de paraules nou cada dia, gratis i en català.">
 <link rel="canonical" href="https://capicua.noeba.cat/">
