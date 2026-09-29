@@ -54,8 +54,13 @@
     nogame: document.getElementById('nogame'),
     track: document.getElementById('track'),
     bigLetter: document.getElementById('bigLetter'),
-    dirBack: document.getElementById('dirBack'),
-    dirFwd: document.getElementById('dirFwd'),
+    dirHintBack: document.getElementById('dirHintBack'),
+    dirHintFwd: document.getElementById('dirHintFwd'),
+    dirModal: document.getElementById('dirModal'),
+    dirGoFwd: document.getElementById('dirGoFwd'),
+    dirGoBack: document.getElementById('dirGoBack'),
+    dirGoFwdHint: document.getElementById('dirGoFwdHint'),
+    dirGoBackHint: document.getElementById('dirGoBackHint'),
     clueIntro: document.getElementById('clueIntro'),
     clueText: document.getElementById('clueText'),
     listenBtn: document.getElementById('listenBtn'),
@@ -120,10 +125,16 @@
   if (!state || !Array.isArray(state.cells) || state.cells.length !== N ||
       (state.joker !== 'unused' && state.joker !== 'spent')) {
     state = { cells: day.cells.map(() => ({ s: 'pending', ans: '' })), cur: 0, done: false,
-              elapsed: 0, awaiting: 'answer', joker: 'unused', swap: null };
+              elapsed: 0, awaiting: 'answer', joker: 'unused', swap: null,
+              dir: 1, dirChosen: false };
+  } else {
+    // Partides començades amb el flux antic (direcció a cada lletra):
+    // continuen cap endavant sense demanar res.
+    if (state.dir !== 1 && state.dir !== -1) state.dir = 1;
+    if (typeof state.dirChosen !== 'boolean') state.dirChosen = true;
   }
   if (typeof state.elapsed !== 'number') state.elapsed = 0;
-  if (state.awaiting !== 'dir' && state.awaiting !== 'answer') state.awaiting = 'answer';
+  if (state.awaiting !== 'answer') state.awaiting = 'answer';
   function save() { try { localStorage.setItem(LS_GAME, JSON.stringify(state)); } catch (e) {} }
 
   // ---------- timer ----------
@@ -270,6 +281,11 @@
     els.track.style.transform = 'translateX(0)';
     els.track.style.opacity = '1';
   }
+  function paintDirHint() {
+    const on = !state.done && state.dirChosen;
+    els.dirHintBack.classList.toggle('on', on && state.dir === -1);
+    els.dirHintFwd.classList.toggle('on', on && state.dir === 1);
+  }
 
   // ---------- flow ----------
   function unanswered(i) {
@@ -300,12 +316,10 @@
   }
   function setAwaiting(mode) {
     state.awaiting = mode;
-    const answering = mode === 'answer';
+    const answering = mode === 'answer' && state.dirChosen;
     els.input.disabled = !answering;
     els.passo.disabled = !answering;
     els.form.querySelector('button[type=submit]').disabled = !answering;
-    els.dirBack.disabled = answering;
-    els.dirFwd.disabled = answering;
     paintWindow();
     paintJoker();
   }
@@ -321,8 +335,9 @@
     paintScore();
     paintWindow();
     paintJoker();
+    paintDirHint();
     if (typeof animDir === 'number') slideWindow(animDir);
-    if (state.awaiting === 'answer') setTimeout(() => els.input.focus(), 50);
+    if (state.awaiting === 'answer' && state.dirChosen) setTimeout(() => els.input.focus(), 50);
   }
   function move(dir) {
     startTimer();
@@ -333,8 +348,9 @@
     save();
     showCurrent(dir);
   }
+  function advance() { move(state.dir); }
   function jumpTo(i) {
-    if (state.done || !unanswered(i)) return;
+    if (state.done || !state.dirChosen || !unanswered(i)) return;
     startTimer();
     const prev = state.cur;
     state.cur = i;
@@ -344,11 +360,36 @@
     const bwd = ((SLOTS.indexOf(prev) - SLOTS.indexOf(i)) % Q + Q) % Q;
     showCurrent(fwd <= bwd ? 1 : -1);
   }
-  els.dirBack.addEventListener('click', () => { if (state.awaiting === 'dir') move(-1); });
-  els.dirFwd.addEventListener('click', () => { if (state.awaiting === 'dir') move(1); });
+
+  // ---------- one-time direction choice ----------
+  function openDirChoice() {
+    const first = day.cells[SLOTS[0]].l.toUpperCase();
+    const last = day.cells[SLOTS[Q - 1]].l.toUpperCase();
+    els.dirGoFwdHint.textContent = `comences per la ${first} i vas cap a la ${last}`;
+    els.dirGoBackHint.textContent = `comences per la ${last} i vas cap a la ${first}`;
+    els.dirModal.hidden = false;
+    setTimeout(() => els.dirGoFwd.focus(), 50);
+  }
+  function chooseDir(d) {
+    if (state.dirChosen || state.done) return;
+    state.dir = d;
+    state.dirChosen = true;
+    state.cur = d > 0 ? nextUnanswered(0, 1) : nextUnanswered(N - 1, -1);
+    if (state.cur === -1) state.cur = 0;
+    save();
+    els.dirModal.hidden = true;
+    startTimer();
+    setAwaiting('answer');
+    showCurrent(d);
+    let seenHelp = null;
+    try { seenHelp = localStorage.getItem(LS_HELP); } catch (e) {}
+    if (!seenHelp) openHelp();
+  }
+  els.dirGoFwd.addEventListener('click', () => chooseDir(1));
+  els.dirGoBack.addEventListener('click', () => chooseDir(-1));
 
   function paintJoker() {
-    const active = !state.done && state.joker === 'unused' && state.awaiting === 'answer';
+    const active = !state.done && state.joker === 'unused' && state.awaiting === 'answer' && state.dirChosen;
     els.jokerBtn.disabled = !active;
     els.jokerBtn.className = 'joker-btn' +
       (state.joker === 'spent' ? ' spent' : '') +
@@ -360,7 +401,7 @@
   els.jokerBtn.addEventListener('click', () => { useJoker(); });
 
   function useJoker() {
-    if (state.joker !== 'unused' || state.awaiting !== 'answer' || state.done) return;
+    if (state.joker !== 'unused' || state.awaiting !== 'answer' || state.done || !state.dirChosen) return;
     if (state.cur === CIDX) return;
     startTimer();
     state.joker = 'spent';
@@ -370,16 +411,11 @@
   }
 
   function afterAnswer() {
-    // answered/passed: player now picks a direction (or taps a tile)
+    // answered/passed: the game moves on alone in the chosen direction
     const k = counts();
     if (k.left === 0) { finish(); return; }
-    setAwaiting('dir');
     save();
-    els.input.value = '';
-    els.clueIntro.textContent = 'Tria la direcció:';
-    els.clueText.textContent = 'Prem ◀ Enrere o Endavant ▶ per anar a una altra lletra, o toca directament una lletra lliure de la tira.';
-    paintScore();
-    paintWindow();
+    advance();
   }
   function answer(val) {
     startTimer();
@@ -413,13 +449,13 @@
   });
   els.form.addEventListener('submit', (e) => {
     e.preventDefault();
-    if (state.awaiting !== 'answer') return;
+    if (state.awaiting !== 'answer' || !state.dirChosen) return;
     const v = els.input.value.trim();
     if (!v) return;
     answer(v);
   });
   els.passo.addEventListener('click', () => {
-    if (state.awaiting !== 'answer') return;
+    if (state.awaiting !== 'answer' || !state.dirChosen) return;
     startTimer();
     const i = state.cur;
     if (state.cells[i].s === 'pending') state.cells[i].s = 'pass';
@@ -434,6 +470,7 @@
     save();
     paintWindow();
     paintJoker();
+    paintDirHint();
     const st = updateStreak();
     paintStreak();
     els.game.hidden = true;
@@ -500,16 +537,22 @@
     finish();
   } else {
     if (!unanswered(state.cur)) {
-      state.cur = nextUnanswered(state.cur, 1);
+      state.cur = nextUnanswered(state.cur, state.dir);
       if (state.cur === -1) state.cur = 0;
     }
     els.game.hidden = false;
-    setAwaiting(state.awaiting);
+    setAwaiting('answer');
     paintTimer();
+    paintDirHint();
     showCurrent();
-    if (state.elapsed > 0) startTimer();
-    let seenHelp = null;
-    try { seenHelp = localStorage.getItem(LS_HELP); } catch (e) {}
-    if (!seenHelp && state.elapsed === 0 && state.cells.every(c => c.s === 'pending')) openHelp();
+    if (state.elapsed > 0 && state.dirChosen) startTimer();
+    if (!state.dirChosen) {
+      // Partida nova: la direcció es tria una sola vegada, aquí.
+      openDirChoice();
+    } else {
+      let seenHelp = null;
+      try { seenHelp = localStorage.getItem(LS_HELP); } catch (e) {}
+      if (!seenHelp && state.elapsed === 0 && state.cells.every(c => c.s === 'pending')) openHelp();
+    }
   }
 })();

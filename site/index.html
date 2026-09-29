@@ -22,18 +22,18 @@
 }catch(e){}})();
 </script>
 <title>Capicua — el joc de paraules diari en català | capicua.noeba.cat</title>
-<meta name="description" content="El Capicua diari en català: 21 definicions del Viccionari i el comodí de la Ç. Tria endavant o enrere després de cada lletra. Un joc de paraules nou cada dia, gratis i en català.">
+<meta name="description" content="El Capicua diari en català: 21 definicions del Viccionari i el comodí de la Ç. Tria la direcció un sol cop i respon sense parar. Un joc de paraules nou cada dia, gratis i en català.">
 <link rel="canonical" href="https://capicua.noeba.cat/">
 <meta property="og:type" content="website">
 <meta property="og:locale" content="ca_ES">
 <meta property="og:site_name" content="capicua.noeba.cat">
 <meta property="og:title" content="Capicua — el joc de paraules diari en català">
-<meta property="og:description" content="21 definicions i un comodí. Endavant o enrere, tu tries. Un Capicua nou cada dia, gratis i en català.">
+<meta property="og:description" content="21 definicions i un comodí. Tria la direcció un sol cop i juga. Un Capicua nou cada dia, gratis i en català.">
 <meta property="og:url" content="https://capicua.noeba.cat/">
 <meta property="og:image" content="https://capicua.noeba.cat/assets/og.png">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Capicua — el joc de paraules diari en català">
-<meta name="twitter:description" content="21 definicions i un comodí. Endavant o enrere, tu tries. Un Capicua nou cada dia, gratis i en català.">
+<meta name="twitter:description" content="21 definicions i un comodí. Tria la direcció un sol cop i juga. Un Capicua nou cada dia, gratis i en català.">
 <meta name="twitter:image" content="https://capicua.noeba.cat/assets/og.png">
 <link rel="icon" type="image/png" href="/assets/favicon.png">
 <link rel="apple-touch-icon" href="/assets/favicon.png">
@@ -65,9 +65,9 @@
   </div>
 
   <div class="dir-bar">
-    <button id="dirBack" class="dir-btn" type="button" aria-label="Vés enrere">◀ <span>Enrere</span></button>
+    <span id="dirHintBack" class="dir-hint" aria-hidden="true">◀</span>
     <div id="bigLetter" class="big-letter" aria-live="polite"></div>
-    <button id="dirFwd" class="dir-btn" type="button" aria-label="Vés endavant"><span>Endavant</span> ▶</button>
+    <span id="dirHintFwd" class="dir-hint" aria-hidden="true">▶</span>
   </div>
 
   <section class="clue-panel" aria-live="polite">
@@ -93,6 +93,23 @@
   </div>
 </main>
 
+<div id="dirModal" class="modal" hidden role="dialog" aria-labelledby="dirTitle" aria-modal="true">
+  <div class="modal-card dir-card">
+    <h2 id="dirTitle" class="dir-title">Per on comences?</h2>
+    <p class="dir-sub">Tria la direcció una sola vegada. Després el joc avança sol: tu només has de respondre.</p>
+    <div class="dir-choices">
+      <button id="dirGoFwd" class="dir-btn dir-choice" type="button">
+        <span class="dc-main">▶ Endavant</span>
+        <small id="dirGoFwdHint" class="dc-hint"></small>
+      </button>
+      <button id="dirGoBack" class="dir-btn dir-choice" type="button">
+        <span class="dc-main">◀ Enrere</span>
+        <small id="dirGoBackHint" class="dc-hint"></small>
+      </button>
+    </div>
+  </div>
+</div>
+
 <div id="errModal" class="modal" hidden role="alertdialog" aria-labelledby="errTitle" aria-modal="true">
   <div class="modal-card">
     <h2 id="errTitle" class="modal-title">Error!</h2>
@@ -111,7 +128,7 @@
       <ol>
         <li>Llegeix la definició, escriu la paraula i prem <strong>Respon</strong>. No cal que hi posis accents ni cedilles: el joc els entén igual.</li>
         <li>Si no la saps, prem <strong>Passo</strong>: la lletra queda pendent i hi tornaràs més tard.</li>
-        <li>Després de cada resposta, tria la direcció: <strong>◀ Enrere</strong> o <strong>Endavant ▶</strong>. També pots tocar directament qualsevol lletra lliure de la tira.</li>
+        <li>En començar, tria la direcció una sola vegada: <strong>▶ Endavant</strong> (de la primera lletra cap a l'última) o <strong>◀ Enrere</strong>. A partir d'aquí el joc avança sol després de cada resposta. Si vols anar a una lletra concreta, toca-la directament a la tira.</li>
         <li>Si falles, et mostrarem la resposta correcta i la lletra es quedarà vermella.</li>
         <li>El <strong>cronòmetre</strong> corre mentre jugues: intenta acabar el més ràpid possible!</li>
       </ol>
