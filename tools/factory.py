@@ -16,11 +16,17 @@ MIN_REUSE_GAP = 25                          # below this a letter flips to contÃ
 MAX_GLOSS = 160
 MIN_GLOSS = 6
 
+# Owner decision 2026-09-29: the pool had too many obscure words for the target
+# audience (15-70 anys). The pool is now filtered by Catalan frequency (wordfreq):
+# below POOL_FLOOR a word never enters the queue; easy tier raised to zipf >= 3.2.
+POOL_FLOOR = 2.6          # global minimum zipf (ca) for any cell
+POOL_FLOOR_C = 1.8        # Ã§ cells stay harder by spec, but not absurd
+
 def tier(w):
     z = zipf_frequency(w, 'ca')
     L = len(w)
-    if z >= 2.6 and L <= 13: return 'easy'
-    if z >= 1.6 and L <= 15: return 'hard'
+    if z >= 3.2 and L <= 13: return 'easy'
+    if z >= 2.6 and L <= 15: return 'hard'
     return 'vhard'
 
 def norm(s):
@@ -33,6 +39,7 @@ def main(n_roscos, seed=20260920, batch=1, prev_files=()):
     if os.path.exists('tools/raw/exclude.txt'):
         excl = {l.strip().lower() for l in open('tools/raw/exclude.txt', encoding='utf-8') if l.strip()}
     rows = [r for r in rows if r['w'].lower() not in excl]
+    rows = [r for r in rows if zipf_frequency(r['w'], 'ca') >= POOL_FLOOR]  # 2026-09-29 frequency filter
     # candidate pool per letter/mode: best-gloss entries
     pool = collections.defaultdict(list)   # (letter, mode) -> [entry]
     for e in rows:
