@@ -125,23 +125,35 @@ body {
 .joker-btn.spent .jk-letter::after { content: none; }
 .joker-btn.active { box-shadow: 0 0 0 5px var(--joker-soft); }
 
-/* ---- direction bar ---- */
+/* ---- direction bar (passive hint of the chosen direction) ---- */
 .dir-bar {
   width: 100%; display: flex; align-items: center; justify-content: space-between;
   gap: .8rem; margin-bottom: 1.1rem;
 }
+.dir-hint {
+  flex: 1 1 0; max-width: 220px; text-align: center;
+  font-size: 1.9rem; font-weight: 800; color: var(--line);
+  user-select: none; transition: color .15s;
+}
+.dir-hint.on { color: var(--accent); }
+/* ---- start modal: one-time direction choice ---- */
+.dir-card { border-top: 6px solid var(--accent); max-width: 440px; }
+.dir-title { color: var(--accent); font-size: 1.5rem; margin-bottom: .45rem; }
+.dir-sub { color: var(--muted); font-size: .98rem; line-height: 1.45; margin-bottom: 1.1rem; }
+.dir-choices { display: flex; flex-direction: column; gap: .7rem; }
 .dir-btn {
-  flex: 1 1 0; max-width: 220px;
   font-family: inherit; font-size: 1.1rem; font-weight: 800;
   padding: .85rem 1rem; border-radius: var(--radius);
   border: 2px solid var(--accent); background: var(--card); color: var(--accent);
   cursor: pointer; display: flex; align-items: center; justify-content: center; gap: .4rem;
   box-shadow: var(--shadow); transition: transform .12s, opacity .12s;
 }
-.dir-btn:disabled { opacity: .35; border-color: var(--line); color: var(--muted); cursor: default; box-shadow: none; }
-.dir-btn:not(:disabled):active { transform: scale(.96); }
-.dir-btn:not(:disabled) { animation: dirpulse 1.6s ease-in-out infinite; }
+.dir-btn:active { transform: scale(.96); }
+.dir-btn { animation: dirpulse 1.6s ease-in-out infinite; }
 @keyframes dirpulse { 0%,100% { box-shadow: var(--shadow); } 50% { box-shadow: 0 0 0 6px var(--accent-soft); } }
+.dir-choice { flex-direction: column; gap: .15rem; width: 100%; }
+.dir-choice .dc-main { font-size: 1.2rem; }
+.dir-choice .dc-hint { font-size: .82rem; font-weight: 600; color: var(--muted); }
 .big-letter {
   flex: none; width: 92px; height: 92px; border-radius: 22px;
   background: var(--card); border: 2px solid var(--line); box-shadow: var(--shadow);
@@ -252,7 +264,6 @@ body {
   .tile { width: 42px; height: 42px; font-size: 1rem; border-radius: 10px; }
   .track { gap: 6px; }
   .big-letter { width: 76px; height: 76px; font-size: 2.8rem; border-radius: 18px; }
-  .dir-btn { font-size: 1rem; padding: .8rem .6rem; }
-  .dir-btn span { display: none; }
+  .dir-hint { font-size: 1.5rem; }
   .btn { padding: .8rem 1.1rem; }
 }
