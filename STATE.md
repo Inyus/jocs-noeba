@@ -18,7 +18,7 @@
 - Deploy Cloudflare Workers + domini jocs.noeba.cat.
 - Auditoria visual multi-amplada amb screenshots (pressupost de navegador es
   reinicia a les 00:00).
-- SEO: Google Search Console (davidgn92@gmail.com), verificar propietat,
+- SEO: Google Search Console (hola@noeba.cat), verificar propietat,
   enviar sitemap, demanar indexació.
 - Confirmació de l'usuari de la config de veu final (mostres K/L enviades).
 - Nom públic definitiu del joc (de moment "La Rosca" descriptiu).
